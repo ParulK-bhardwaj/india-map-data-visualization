@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spice Levels and Must-Eat Dishes in Indian States</title>
+  <style>
+    body, html {
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    h1 {
+      color: rgb(237, 225, 202);
+      background-color: rgb(2, 117, 2);
+      padding: 10px 20px;
+      border: white 2px;
+      border-style:double;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    svg {
+      border: 2px solid black;
+    }
+    
+    .tooltip {
+      position: absolute;
+      background-color: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      pointer-events: none;
+      font-weight:400;
+    }
+    
+    .tooltip-image {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🇮🇳 Spice Levels and Must-Eat Dishes in Indian States 🇮🇳</h1>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/topojson@3"></script>
+  <script>
+    // Define variables for width and height
+    const width = 950;
+    const height = 550;
+
+    // Define a projection
+    const projection = d3.geoMercator()
+      .scale(1000)
+      .center([82.9, 23.7]);
+
+    // SVG element
+    const svg = d3.select('body')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    // Create a path
+    const path = d3.geoPath()
+      .projection(projection);
+    
+    const g = svg.append('g');
+
+    // Load the map data and dish data
+    async function loadData() {
+      const topology = await d3.json('Indian_States.json');
+      const dishData = await d3.json('indianfood-data.json');
+      const states = topology.features;
+
+      // spice score for each state
+      const spiceScores = {};
+      const stateDishes = {};
+
+      dishData.forEach(dish => {
+        const state = dish.state;
+        const flavorProfile = dish.flavor_profile || [];
+        const spiceLevel = flavorProfile.includes('Spicy') ? 3 : flavorProfile.includes('Mildly Spicy') ? 2 : 1;
+
+        if (stateDishes[state]) {
+          stateDishes[state].push(dish);
+          spiceScores[state] += spiceLevel;
+        } else {
+          stateDishes[state] = [dish];
+          spiceScores[state] = spiceLevel;
+        }
+      });
+
+      // average spice scores
+      Object.keys(spiceScores).forEach(state => {
+        const dishCount = stateDishes[state].length;
+        spiceScores[state] = spiceScores[state] / dishCount;
+      });
+
+      // color scale for each state based on spice scores
+      const maxSpiceScore = Math.max(...Object.values(spiceScores));
+      const colorScale = d3.scaleLinear()
+        .domain([maxSpiceScore, 1])
+        .range(['#FF0000', '#FF8888']); // Dark red to light red
+
+      // Draw map
+      g.selectAll('path')
+        .data(states)
+        .enter()
+        .append('path')
+        .attr('d', path)
+        .attr('fill', d => colorScale(spiceScores[d.properties.NAME_1]))
+        .attr('stroke', 'white')
+        .attr('stroke-width', 0.5)
+        .on('mouseover', function (event, d) {
+          showTooltip(event, d);
+        })
+        .on('mouseout', function () {
+          hideTooltip();
+        });
+
+      // Define the tooltip
+      const tooltip = d3
+        .select('body')
+        .append('div')
+        .attr('class', 'tooltip')
+        .style('opacity', 0);
+
+      function showTooltip(event, d) {
+        const stateName = d.properties.NAME_1;
+        const stateSpiceScore = spiceScores[stateName] || 'No data';
+        const dishes = stateDishes[stateName] || [];
+
+        if (dishes.length > 0) {
+          tooltip.style('opacity', 1)
+            .style('left', event.pageX + 10 + 'px')
+            .style('top', event.pageY + 10 + 'px');
+
+          tooltip.html(`<b>State:</b> ${stateName}<br><b>Spice Score:</b> ${stateSpiceScore}`);
+
+          dishes.forEach(dish => {
+            const dishName = dish.name;
+            const dishImage = dish.images || '';
+
+            const tooltipContent = tooltip.append('div').attr('class', 'tooltip-content');
+
+            if (dishImage !== '') {
+              tooltipContent.append('img')
+                .attr('src', dishImage)
+                .attr('class', 'tooltip-image');
+            }
+
+            tooltipContent.append('span').text(dishName);
+          });
+        } else {
+          tooltip.style('opacity', 1)
+            .style('left', event.pageX + 10 + 'px')
+            .style('top', event.pageY + 10 + 'px')
+            .html(`<b>State:</b> ${stateName}<br><b>Spice Score:</b> ${stateSpiceScore}`);
+        }
+      }
+
+      function hideTooltip() {
+        tooltip.style('opacity', 0)
+          .selectAll('.tooltip-content')
+          .remove();
+      }
+    }
+    loadData();
+  </script>
+</body>
+
+</html>
