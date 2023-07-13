@@ -1,6 +1,7 @@
 # Data Visualization of the Must-Eat Dishes and the Spice Levels in Indian States
 This project visualizes the spice levels and must-eat dishes in different states of India using D3.js. It displays an interactive map of India with color-coded states based on their spice levels, and provides tooltips with information about the state's spice score and associated must-eat dishes.
-
+![image](https://github.com/ParulK-bhardwaj/india-map-data-visualization/assets/111934039/4c0f65d1-9e43-486e-a2f0-d643ef115185)
+![image](https://github.com/ParulK-bhardwaj/india-map-data-visualization/assets/111934039/3bcb72b4-aeae-4291-83b9-40eb4bff1336)
 ## Usage
 To explore the visualization, follow these steps:
 1. Clone the repository or download the files to your local machine.
